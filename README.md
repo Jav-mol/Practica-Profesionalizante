@@ -1,11 +1,17 @@
-# FBJ Internet — Herramienta de decisión de capacidad y velocidad
+# Practica-Profesionalizante
 
-Prototipo y despliegue de la solución del proyecto de Prácticas Profesionalizantes.
+Proyectos de Práctica Profesionalizante
 
 **ITSE** · Tecnicatura Superior en Ciencia de Datos e Inteligencia Artificial
 Claramunt, Federico · Molina, Javier
 
 ---
+
+# FBJ Internet — Herramienta de decisión de capacidad y velocidad
+
+Prototipo y despliegue de la solución del proyecto: una herramienta de decisión para el titular de
+FBJ Internet, un proveedor de servicios de Internet local que revende capacidad de dos antenas
+Starlink a 60 clientes.
 
 ## Qué es
 
@@ -76,6 +82,7 @@ Notas de funcionamiento:
 app.py                      aplicación (6 pantallas)
 modelo_metricas.json        métricas, curva de saturación, umbrales y efectos del modelo
 entrenar_modelo_fbj.py      script de entrenamiento (reproducibilidad)
+requirements.txt            dependencias
 data/
   mediciones_procesado.csv  8.067 mediciones · 52 clientes · 90 días · 4 franjas
   clientes_procesado.csv    padrón de 60 clientes sin datos personales
