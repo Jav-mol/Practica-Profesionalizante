@@ -1,0 +1,212 @@
+{
+ "metricas": {
+  "Ridge (lineal regularizada)": {
+   "mae": 3.11,
+   "rmse": 3.85,
+   "r2": 0.751
+  },
+  "Random Forest": {
+   "mae": 2.76,
+   "rmse": 3.49,
+   "r2": 0.795
+  }
+ },
+ "efectos": {
+  "distancia_m": -0.052,
+  "senal_dbm": -0.162,
+  "usuarios_activos_antena": -0.575
+ },
+ "efectos_inalambricos": {
+  "distancia_m_por_100m": -1.42,
+  "senal_dbm": 0.3852,
+  "activos": -0.553,
+  "activos_con_distancia": -0.5537,
+  "activos_con_senal": -0.5519
+ },
+ "umbrales": {
+  "15": 20,
+  "18": 15,
+  "20": 14,
+  "25": 7,
+  "30": null
+ },
+ "curva": [
+  {
+   "activos": 1,
+   "n": 124,
+   "mediana": 26.1,
+   "cable": 35.0,
+   "antena": 20.5
+  },
+  {
+   "activos": 2,
+   "n": 196,
+   "mediana": 23.8,
+   "cable": 34.2,
+   "antena": 19.5
+  },
+  {
+   "activos": 3,
+   "n": 201,
+   "mediana": 24.5,
+   "cable": 34.5,
+   "antena": 19.8
+  },
+  {
+   "activos": 4,
+   "n": 179,
+   "mediana": 23.3,
+   "cable": 35.0,
+   "antena": 18.8
+  },
+  {
+   "activos": 5,
+   "n": 320,
+   "mediana": 25.2,
+   "cable": 34.2,
+   "antena": 19.8
+  },
+  {
+   "activos": 6,
+   "n": 507,
+   "mediana": 23.2,
+   "cable": 34.4,
+   "antena": 19.5
+  },
+  {
+   "activos": 7,
+   "n": 666,
+   "mediana": 25.0,
+   "cable": 34.5,
+   "antena": 19.5
+  },
+  {
+   "activos": 8,
+   "n": 769,
+   "mediana": 23.6,
+   "cable": 35.0,
+   "antena": 19.8
+  },
+  {
+   "activos": 9,
+   "n": 730,
+   "mediana": 24.5,
+   "cable": 34.4,
+   "antena": 19.1
+  },
+  {
+   "activos": 10,
+   "n": 889,
+   "mediana": 23.9,
+   "cable": 34.0,
+   "antena": 19.6
+  },
+  {
+   "activos": 11,
+   "n": 640,
+   "mediana": 23.8,
+   "cable": 34.3,
+   "antena": 19.2
+  },
+  {
+   "activos": 12,
+   "n": 695,
+   "mediana": 23.1,
+   "cable": 33.2,
+   "antena": 18.4
+  },
+  {
+   "activos": 13,
+   "n": 743,
+   "mediana": 22.2,
+   "cable": 30.7,
+   "antena": 17.2
+  },
+  {
+   "activos": 14,
+   "n": 296,
+   "mediana": 20.6,
+   "cable": 28.2,
+   "antena": 15.9
+  },
+  {
+   "activos": 15,
+   "n": 324,
+   "mediana": 18.1,
+   "cable": 26.0,
+   "antena": 14.5
+  },
+  {
+   "activos": 16,
+   "n": 450,
+   "mediana": 16.8,
+   "cable": 24.5,
+   "antena": 13.6
+  },
+  {
+   "activos": 17,
+   "n": 193,
+   "mediana": 16.4,
+   "cable": 21.5,
+   "antena": 12.9
+  },
+  {
+   "activos": 18,
+   "n": 58,
+   "mediana": 15.3,
+   "cable": 25.4,
+   "antena": 13.2
+  },
+  {
+   "activos": 20,
+   "n": 45,
+   "mediana": 16.5,
+   "cable": 20.3,
+   "antena": 12.2
+  },
+  {
+   "activos": 22,
+   "n": 23,
+   "mediana": 11.6,
+   "cable": 13.2,
+   "antena": 6.7
+  }
+ ],
+ "importancias": {
+  "num__distancia_m": 0.6503,
+  "num__usuarios_activos_antena": 0.1257,
+  "num__senal_dbm": 0.0854,
+  "cat__tipo_conexion_Cable": 0.0514,
+  "cat__tipo_conexion_Antena": 0.0407,
+  "cat__lluvia_0": 0.017,
+  "cat__lluvia_1": 0.0123,
+  "cat__franja_Tarde": 0.0031,
+  "cat__franja_Mañana": 0.0026,
+  "cat__es_fin_de_semana_0": 0.0025,
+  "cat__es_fin_de_semana_1": 0.0025,
+  "cat__franja_Noche": 0.0023,
+  "cat__id_antena_A": 0.0015,
+  "cat__id_antena_B": 0.0015,
+  "cat__franja_Madrugada": 0.0005,
+  "cat__es_feriado_0": 0.0003,
+  "cat__es_feriado_1": 0.0003
+ },
+ "n_entrenamiento": 8067,
+ "ventana": [
+  "2026-06-01",
+  "2026-08-29"
+ ],
+ "variables_num": [
+  "distancia_m",
+  "senal_dbm",
+  "usuarios_activos_antena"
+ ],
+ "variables_cat": [
+  "tipo_conexion",
+  "id_antena",
+  "franja",
+  "lluvia",
+  "es_fin_de_semana",
+  "es_feriado"
+ ]
+}
