@@ -41,6 +41,35 @@ streamlit run app.py
 
 Se abre en `http://localhost:8501`.
 
+## Cómo desplegarlo
+
+### Opción 1 — En una computadora del negocio (la más simple)
+
+Es la forma recomendada para mostrarlo: no depende de internet ni de servicios externos.
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+### Opción 2 — Streamlit Community Cloud (URL pública)
+
+1. Subir este repositorio a GitHub. **Puede ser público sin problema**: el conjunto de trabajo
+   identifica a los clientes por código y no contiene nombre ni apellido de ninguna persona.
+2. Entrar a <https://share.streamlit.io> con la cuenta de GitHub.
+3. «New app» → elegir el repositorio, la rama `main` y `app.py` como archivo principal.
+4. Deploy. La aplicación queda disponible en una dirección `https://<nombre>.streamlit.app`.
+
+Notas de funcionamiento:
+
+- **El modelo se entrena cuando la aplicación arranca** (unos 10 segundos), desde
+  `data/mediciones_procesado.csv`. No depende de archivos binarios ni de una versión exacta de
+  las librerías, así que el resultado es reproducible.
+- El servicio **suspende la aplicación después de un rato sin uso** y tarda unos 30 segundos en
+  despertarla. Conviene abrirla unos minutos antes de una demostración.
+- Para el monitoreo continuo (Etapa 9) haría falta instrumentar la red de la entidad: esta
+  herramienta no lee datos en vivo.
+
 ## Estructura
 
 ```
