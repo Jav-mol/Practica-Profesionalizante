@@ -170,13 +170,14 @@ elif pantalla.startswith("2"):
     g["inalambricos_%"] = j.groupby("zona").tipo_conexion.apply(lambda s: round(100 * (s == "Antena").mean())).round(0)
     g = g.sort_values("velocidad_mediana")
     st.dataframe(g.rename(columns={"velocidad_mediana": "velocidad mediana (Mbps)", "bajo_objetivo": "% bajo el objetivo",
-                                   "distancia_media": "distancia media (m)", "inalambricos_%": "% clientes por antena"}),
+                                   "distancia_media": "distancia media (m)", "inalambricos_%": "% clientes por antena",
+                                   "clientes": "clientes con mediciones"}),
                  width="stretch")
     st.bar_chart(g["velocidad_mediana"])
     peor = g.index[0]
     st.warning(f"**La zona con peor desempeño es {peor}**, con {g.loc[peor,'velocidad_mediana']:.1f} Mbps de mediana y "
                f"{g.loc[peor,'bajo_objetivo']:.0f}% de las mediciones por debajo del objetivo, sobre "
-               f"{int(g.loc[peor,'clientes'])} clientes. La distancia media de esa zona es de "
+               f"{int(g.loc[peor,'clientes'])} clientes con mediciones. La distancia media de esa zona es de "
                f"{g.loc[peor,'distancia_media']:.0f} m al nodo, contra {g['distancia_media'].min():.0f} m de la mejor.")
     st.caption("El criterio de priorización es operativo: la zona que menos recibe y a la que más cuesta llegar "
                "es la que primero hay que intervenir.")
