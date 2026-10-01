@@ -37,8 +37,24 @@ st.set_page_config(page_title="FBJ Internet · Velocidad y capacidad", page_icon
 
 
 # --------------------------------------------------------------------------- datos y modelo
+ARCHIVOS = [BASE / "data" / "mediciones_procesado.csv",
+            BASE / "data" / "clientes_procesado.csv",
+            BASE / "modelo_metricas.json"]
+
+
+def huella(rutas=ARCHIVOS):
+    """Firma de los archivos que lee la aplicación: fecha de modificación y tamaño.
+
+    Se pasa como argumento a las tres funciones cacheadas, y no es un adorno: @st.cache_data arma
+    la clave de la caché con el código de la función, no con el contenido que la función lee. Sin
+    esta firma, un conjunto de datos actualizado se sigue mostrando con los valores viejos hasta
+    que el proceso se reinicia — que es exactamente el síntoma de una app desplegada que no
+    refleja los datos nuevos del repositorio."""
+    return "|".join(f"{p.stat().st_mtime_ns}:{p.stat().st_size}" for p in rutas)
+
+
 @st.cache_data
-def cargar_datos():
+def cargar_datos(firma):
     med = pd.read_csv(BASE / "data" / "mediciones_procesado.csv", parse_dates=["fecha"])
     med["senal_dbm"] = med.senal_dbm.fillna(SIN_SENAL)
     cli = pd.read_csv(BASE / "data" / "clientes_procesado.csv")
@@ -46,12 +62,12 @@ def cargar_datos():
 
 
 @st.cache_data
-def cargar_meta():
+def cargar_meta(firma):
     return json.loads((BASE / "modelo_metricas.json").read_text(encoding="utf-8"))
 
 
 @st.cache_resource
-def entrenar(_med):
+def entrenar(firma, _med):
     """Entrena al arrancar desde el mismo conjunto y con el mismo procedimiento del script de
     entrenamiento. Evita depender de una versión exacta de las librerías para deserializar."""
     def armar():
@@ -85,9 +101,10 @@ def umbral_para(curva, objetivo, tipo=None):
     return max(ok) if ok else 0
 
 
-med, cli = cargar_datos()
-meta = cargar_meta()
-modelos = entrenar(med)
+FIRMA = huella()
+med, cli = cargar_datos(FIRMA)
+meta = cargar_meta(FIRMA)
+modelos = entrenar(FIRMA, med)
 mae = meta["metricas"]["Random Forest"]["mae"]
 r2 = meta["metricas"]["Random Forest"]["r2"]
 curva = meta["curva"]
