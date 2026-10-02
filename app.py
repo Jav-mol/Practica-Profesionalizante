@@ -153,6 +153,10 @@ if pantalla.startswith("1"):
     else:
         st.error(f"**Saturado.** El nodo llega a {act_max} clientes activos simultáneos y el límite para sostener {objetivo} Mbps es de {umbral}. El {bajo:.0f}% de las mediciones de esta franja queda por debajo del objetivo.")
 
+    st.info("**El umbral tiene respaldo de la entidad.** Federico Claramunt, titular de FBJ Internet, "
+            "confirmó que el dato de 14 clientes simultáneos por antena es correcto y ubicó la degradación "
+            "en la franja nocturna, por ser la de mayor consumo (validación con la entidad, 25/09/2026).")
+
     st.subheader("Curva de saturación")
     st.caption("Velocidad mediana según cuántos clientes estén transfiriendo datos al mismo tiempo en el nodo. "
                "Hasta 13 activos la velocidad se mantiene; a partir de 14 empieza a caer.")
@@ -243,8 +247,13 @@ elif pantalla.startswith("3"):
         st.warning(f"**Duda.** La estimación ({est:.1f} Mbps) está dentro del margen de error del objetivo "
                    f"({objetivo} Mbps). Conviene medir la señal en el domicilio antes de confirmar la instalación.")
     else:
-        st.error(f"**No cumple.** Con estos datos el cliente recibiría unos {est:.1f} Mbps, por debajo del "
-                 f"objetivo de {objetivo} Mbps. La instalación quedaría por debajo de lo ofrecido.")
+        st.error(f"**Por debajo del objetivo.** Con estos datos el cliente recibiría unos {est:.1f} Mbps, por debajo "
+                 f"del objetivo de {objetivo} Mbps.")
+
+    st.info("**Esto no decide si el cliente se instala: decide qué se le anticipa y qué se prioriza.** "
+            "La empresa instala de todos modos, así que una estimación baja no es un rechazo. Sirve para dos "
+            "cosas: avisar en el alta qué velocidad puede esperar, y marcar el domicilio en la lista de los "
+            "que conviene intervenir. Un domicilio marcado así es un reclamo por lentitud que se evita.")
 
     if activos > lim and lim:
         st.error(f"Además, el nodo ya tendría {activos} clientes activos simultáneos y aguanta {lim} para "
@@ -397,9 +406,13 @@ else:
 
     st.subheader("Decisiones de análisis que sostienen los resultados")
     st.markdown("""
-- **El consumo por franja se excluyó del modelo.** Correlaciona 0,954 con la velocidad, pero no la
-  explica: el consumo se calcula a partir de la velocidad lograda. Usarlo como variable predictora
-  inflaría el desempeño del modelo en 0,07 de R² sin aportar información sobre la red.
+- **El consumo por franja se excluyó del modelo.** Correlaciona 0,954 con la velocidad media de cada
+  cliente sobre 52 clientes, y 0,50 si se mira medición por medición, pero no la explica: el consumo se
+  calcula a partir de la velocidad lograda. Medido, usarlo como variable predictora bajaría el error
+  reportado de 2,76 a 2,62 Mbps sin aportar información sobre la red.
+- **La falla del equipamiento del cliente no está en el modelo.** El titular identificó que parte de las
+  fallas se deben a la antena o el router del domicilio: producen cortes y no dependen de la distancia,
+  la señal ni la carga. Queda como línea a explorar en la evaluación.
 - **Las variables predictoras son las que la empresa conoce antes de instalar** o puede observar al
   momento de la medición: distancia, señal, modalidad de conexión, nodo, franja, lluvia y condiciones
   del día. Se excluyeron las consecuencias del servicio medido.

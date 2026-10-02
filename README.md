@@ -109,7 +109,8 @@ versión exacta de las librerías para deserializar un archivo binario.
 
 ### Decisiones de análisis
 
-- **El consumo por franja se excluyó del modelo.** Correlaciona 0,954 con la velocidad, pero no la
+- **El consumo por franja se excluyó del modelo.** Correlaciona 0,954 con la velocidad media de cada
+  cliente (y 0,50 medición por medición), pero no la
   explica: el consumo se calcula a partir de la velocidad lograda. Usarlo como predictor inflaría
   el desempeño en 0,07 de R² sin aportar información sobre la red.
 - **Las variables predictoras se limitaron a las que la empresa conoce antes de instalar** o puede
