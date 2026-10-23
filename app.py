@@ -36,6 +36,38 @@ COSTOS_FIJOS = 200000 + 2 * COSTO_ANTENA
 st.set_page_config(page_title="FBJ Internet · Velocidad y capacidad", page_icon="📶", layout="wide")
 
 
+# --------------------------------------------------------------------------- control de acceso
+# La app se publica en internet. Sin clave, la estructura de costos del negocio (antenas, margen,
+# margen mensual) y el padrón codificado quedan visibles para cualquiera que tenga el enlace.
+# La clave se define en los secrets del despliegue, nunca en el repositorio: .gitignore excluye
+# .streamlit/secrets.toml. Si no hay clave configurada, la app no muestra nada (falla cerrada).
+def _secreto(nombre, defecto=None):
+    try:
+        return st.secrets.get(nombre, defecto)
+    except Exception:
+        return defecto
+
+
+CLAVE = _secreto("clave_acceso")
+if not CLAVE:
+    st.title("FBJ Internet")
+    st.caption("Herramienta de decisión de capacidad y velocidad")
+    st.warning("**Acceso restringido.** La aplicación no tiene configurada su clave de acceso. "
+               "Definí `clave_acceso` en los secrets del despliegue para habilitarla.")
+    st.stop()
+
+if not st.session_state.get("autenticado"):
+    st.title("FBJ Internet")
+    st.caption("Herramienta de decisión de capacidad y velocidad · acceso restringido")
+    with st.form("acceso"):
+        ingresada = st.text_input("Clave de acceso", type="password")
+        if st.form_submit_button("Entrar"):
+            if ingresada == CLAVE:
+                st.session_state.autenticado = True
+                st.rerun()
+            else:
+                st.error("Clave incorrecta.")
+    st.stop()
 # --------------------------------------------------------------------------- datos y modelo
 ARCHIVOS = [BASE / "data" / "mediciones_procesado.csv",
             BASE / "data" / "clientes_procesado.csv",
@@ -54,11 +86,30 @@ def huella(rutas=ARCHIVOS):
 
 
 @st.cache_data
+def cargar_clientes(firma):
+    return pd.read_csv(BASE / "data" / "clientes_procesado.csv")
+
+
+@st.cache_data
 def cargar_datos(firma):
     med = pd.read_csv(BASE / "data" / "mediciones_procesado.csv", parse_dates=["fecha"])
     med["senal_dbm"] = med.senal_dbm.fillna(SIN_SENAL)
-    cli = pd.read_csv(BASE / "data" / "clientes_procesado.csv")
-    return med, cli
+    return med, cargar_clientes(firma)
+
+
+@st.cache_data(ttl=900)
+def cargar_planilla_remota(url):
+    """Lee la planilla compartida publicada como CSV (Archivo → Compartir → Publicar en la web).
+
+    Un archivo remoto no tiene fecha de modificación local que sirva para firmar la caché, así que
+    se refresca cada 15 minutos: es la frecuencia con la que la entidad actualiza el registro.
+    """
+    med = pd.read_csv(url, parse_dates=["fecha"])
+    faltan = [c for c in ["id_cliente", "fecha"] + NUM + CAT + [OBJ] if c not in med.columns]
+    if faltan:
+        raise ValueError(f"La planilla no tiene las columnas necesarias: {', '.join(faltan)}")
+    med["senal_dbm"] = med.senal_dbm.fillna(SIN_SENAL)
+    return med
 
 
 @st.cache_data
@@ -102,9 +153,18 @@ def umbral_para(curva, objetivo, tipo=None):
 
 
 FIRMA = huella()
-med, cli = cargar_datos(FIRMA)
+URL_PLANILLA = _secreto("planilla_mediciones_url")
+if URL_PLANILLA:
+    # la entidad actualiza la planilla; el padrón de clientes sigue en el repositorio
+    med = cargar_planilla_remota(URL_PLANILLA)
+    cli = cargar_clientes(FIRMA)
+    # la firma del modelo tiene que reflejar el contenido remoto, no los archivos locales
+    FIRMA_MODELO = f"remoto|{URL_PLANILLA}|{len(med)}|{round(float(med[OBJ].mean()), 6)}"
+else:
+    med, cli = cargar_datos(FIRMA)
+    FIRMA_MODELO = FIRMA
 meta = cargar_meta(FIRMA)
-modelos = entrenar(FIRMA, med)
+modelos = entrenar(FIRMA_MODELO, med)
 mae = meta["metricas"]["Random Forest"]["mae"]
 r2 = meta["metricas"]["Random Forest"]["r2"]
 curva = meta["curva"]
