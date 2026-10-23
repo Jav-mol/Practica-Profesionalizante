@@ -69,6 +69,13 @@ if not st.session_state.get("autenticado"):
                 st.error("Clave incorrecta.")
     st.stop()
 # --------------------------------------------------------------------------- datos y modelo
+def _carga(df, modo="max"):
+    """Utilización del satélite. La informa el equipo, no la ficha de visita: si la planilla no la
+    trae, la pantalla dice «sin dato» en lugar de romperse."""
+    if "carga_antena_pct" not in df.columns:
+        return "sin dato"
+    valor = getattr(df.carga_antena_pct, modo)()
+    return f"{valor:.1f} %" if pd.notna(valor) else "sin dato"
 ARCHIVOS = [BASE / "data" / "mediciones_procesado.csv",
             BASE / "data" / "clientes_procesado.csv",
             BASE / "modelo_metricas.json"]
@@ -97,22 +104,66 @@ def cargar_datos(firma):
     return med, cargar_clientes(firma)
 
 
+COLUMNAS_PLANILLA = ["id_cliente", "fecha", "franja", "distancia_m", "senal_dbm",
+                    "usuarios_activos_antena", "velocidad_efectiva_mbps"]
+FRANJAS = ["Madrugada", "Mañana", "Tarde", "Noche"]
+
+
+def _num(col):
+    """Convierte a número tolerando lo que la gente escribe en una planilla: «18,4», espacios."""
+    return pd.to_numeric(col.astype(str).str.strip().str.replace(",", ".", regex=False),
+                         errors="coerce")
+
+
 @st.cache_data(ttl=900)
-def cargar_planilla_remota(url):
+def cargar_planilla_remota(url, firma):
     """Lee la planilla compartida publicada como CSV (Archivo → Compartir → Publicar en la web).
 
-    Un archivo remoto no tiene fecha de modificación local que sirva para firmar la caché, así que
-    se refresca cada 15 minutos: es la frecuencia con la que la entidad actualiza el registro.
+    La planilla trae lo que se anota en la visita. Lo que ya está en el padrón (modalidad y antena)
+    se deduce del código de cliente, para que no haya que copiarlo ni pueda quedar desactualizado.
+    Un archivo remoto no tiene fecha de modificación local que sirva para firmar la caché, así que se
+    refresca cada 15 minutos: es la frecuencia con la que la entidad actualiza el registro.
     """
-    med = pd.read_csv(url, parse_dates=["fecha"])
-    faltan = [c for c in ["id_cliente", "fecha"] + NUM + CAT + [OBJ] if c not in med.columns]
+    med = pd.read_csv(url, parse_dates=["fecha"], dayfirst=True)
+    med.columns = [c.strip() for c in med.columns]
+
+    faltan = [c for c in COLUMNAS_PLANILLA if c not in med.columns]
     if faltan:
-        raise ValueError(f"La planilla no tiene las columnas necesarias: {', '.join(faltan)}")
+        raise ValueError(f"Faltan columnas en la planilla: {', '.join(faltan)}. "
+                         f"La planilla necesita: {', '.join(COLUMNAS_PLANILLA)}")
+
+    # la franja se escribe a mano: un valor mal escrito quedaría como categoría desconocida y el
+    # modelo lo ignoraría en silencio, así que se normaliza y se valida acá
+    crudo = med.franja.astype(str).str.strip()
+    med["franja"] = crudo.str.lower().map({f.lower(): f for f in FRANJAS})
+    malas = sorted(crudo[med.franja.isna()].unique())
+    if malas:
+        raise ValueError(f"Franjas que no reconozco: {', '.join(map(str, malas[:5]))}. "
+                         f"Usá: {', '.join(FRANJAS)}")
+
+    for c in ("distancia_m", "senal_dbm", "usuarios_activos_antena", "velocidad_efectiva_mbps"):
+        med[c] = _num(med[c])
+    vacias = [c for c in ("distancia_m", "usuarios_activos_antena", "velocidad_efectiva_mbps")
+              if med[c].isna().any()]
+    if vacias:
+        raise ValueError(f"Hay celdas vacías o no numéricas en: {', '.join(vacias)}")
+
+    # modalidad y antena salen del padrón, no se copian a mano
+    cli = cargar_clientes(firma)
+    med = med.merge(cli[["id_cliente", "tipo_conexion", "id_antena"]], on="id_cliente", how="left")
+    sueltos = sorted(med.loc[med.tipo_conexion.isna(), "id_cliente"].astype(str).unique())
+    if sueltos:
+        raise ValueError(f"Códigos que no están en el padrón: {', '.join(sueltos[:5])}. "
+                         "Agregalos al padrón antes de usar la planilla.")
+
+    med["es_fin_de_semana"] = (med.fecha.dt.weekday >= 5).astype(int)
+    for c in ("lluvia", "es_feriado"):
+        med[c] = _num(med[c]).fillna(0).astype(int) if c in med.columns else 0
+
     med["senal_dbm"] = med.senal_dbm.fillna(SIN_SENAL)
     return med
 
 
-@st.cache_data
 def cargar_meta(firma):
     return json.loads((BASE / "modelo_metricas.json").read_text(encoding="utf-8"))
 
@@ -156,7 +207,7 @@ FIRMA = huella()
 URL_PLANILLA = _secreto("planilla_mediciones_url")
 if URL_PLANILLA:
     # la entidad actualiza la planilla; el padrón de clientes sigue en el repositorio
-    med = cargar_planilla_remota(URL_PLANILLA)
+    med = cargar_planilla_remota(URL_PLANILLA, FIRMA)
     cli = cargar_clientes(FIRMA)
     # la firma del modelo tiene que reflejar el contenido remoto, no los archivos locales
     FIRMA_MODELO = f"remoto|{URL_PLANILLA}|{len(med)}|{round(float(med[OBJ].mean()), 6)}"
@@ -229,8 +280,8 @@ if pantalla.startswith("1"):
 
     st.divider()
     g1, g2 = st.columns(2)
-    g1.metric("Carga de la antena satelital (máx.)", f"{d.carga_antena_pct.max():.1f} %")
-    g2.metric("Carga media", f"{d.carga_antena_pct.mean():.1f} %")
+    g1.metric("Carga de la antena satelital (máx.)", _carga(d, "max"))
+    g2.metric("Carga media", _carga(d, "mean"))
     st.info("**La antena satelital no es el límite.** Su capacidad de 400 Mbps nunca se usa más del 54,2%. "
             "Las antenas quedan al 54% y los clientes igual reciben la mitad de lo ofrecido: la pérdida está "
             "en el tramo final que llega al domicilio, no en el servicio satelital.")
@@ -387,7 +438,7 @@ elif pantalla.startswith("5"):
     st.divider()
     st.subheader("La evidencia")
     e1, e2, e3 = st.columns(3)
-    e1.metric("Uso máximo del satélite", f"{med.carga_antena_pct.max():.1f} %", help="La capacidad de 400 Mbps por antena nunca se usa más de la mitad.")
+    e1.metric("Uso máximo del satélite", _carga(med, "max"), help="La capacidad de 400 Mbps por antena nunca se usa más de la mitad.")
     e2.metric("Diferencia cable vs antena", f"{med[med.tipo_conexion=='Cable'][OBJ].median()-med[med.tipo_conexion=='Antena'][OBJ].median():.1f} Mbps")
     e3.metric("Mediciones bajo 20 Mbps", f"{100*(med[OBJ]<20).mean():.0f} %")
 
