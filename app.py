@@ -37,10 +37,13 @@ st.set_page_config(page_title="FBJ Internet · Velocidad y capacidad", page_icon
 
 
 # --------------------------------------------------------------------------- control de acceso
-# La app se publica en internet. Sin clave, la estructura de costos del negocio (antenas, margen,
-# margen mensual) y el padrón codificado quedan visibles para cualquiera que tenga el enlace.
-# La clave se define en los secrets del despliegue, nunca en el repositorio: .gitignore excluye
-# .streamlit/secrets.toml. Si no hay clave configurada, la app no muestra nada (falla cerrada).
+# La app se publica en internet y muestra la estructura de costos del negocio (antenas, margen por
+# cliente, margen mensual). El portón queda como opción: con EXIGIR_CLAVE en True, la app no muestra
+# nada si no hay clave configurada (falla cerrada) y pide la clave antes de entrar; con False queda
+# abierta para cualquiera que tenga el enlace. Para volver a cerrarla, alcanza con poner True.
+EXIGIR_CLAVE = False
+
+
 def _secreto(nombre, defecto=None):
     try:
         return st.secrets.get(nombre, defecto)
@@ -48,26 +51,27 @@ def _secreto(nombre, defecto=None):
         return defecto
 
 
-CLAVE = _secreto("clave_acceso")
-if not CLAVE:
-    st.title("FBJ Internet")
-    st.caption("Herramienta de decisión de capacidad y velocidad")
-    st.warning("**Acceso restringido.** La aplicación no tiene configurada su clave de acceso. "
-               "Definí `clave_acceso` en los secrets del despliegue para habilitarla.")
-    st.stop()
+if EXIGIR_CLAVE:
+    CLAVE = _secreto("clave_acceso")
+    if not CLAVE:
+        st.title("FBJ Internet")
+        st.caption("Herramienta de decisión de capacidad y velocidad")
+        st.warning("**Acceso restringido.** La aplicación no tiene configurada su clave de acceso. "
+                   "Definí `clave_acceso` en los secrets del despliegue para habilitarla.")
+        st.stop()
 
-if not st.session_state.get("autenticado"):
-    st.title("FBJ Internet")
-    st.caption("Herramienta de decisión de capacidad y velocidad · acceso restringido")
-    with st.form("acceso"):
-        ingresada = st.text_input("Clave de acceso", type="password")
-        if st.form_submit_button("Entrar"):
-            if ingresada == CLAVE:
-                st.session_state.autenticado = True
-                st.rerun()
-            else:
-                st.error("Clave incorrecta.")
-    st.stop()
+    if not st.session_state.get("autenticado"):
+        st.title("FBJ Internet")
+        st.caption("Herramienta de decisión de capacidad y velocidad · acceso restringido")
+        with st.form("acceso"):
+            ingresada = st.text_input("Clave de acceso", type="password")
+            if st.form_submit_button("Entrar"):
+                if ingresada == CLAVE:
+                    st.session_state.autenticado = True
+                    st.rerun()
+                else:
+                    st.error("Clave incorrecta.")
+        st.stop()
 # --------------------------------------------------------------------------- datos y modelo
 def _carga(df, modo="max"):
     """Utilización del satélite. La informa el equipo, no la ficha de visita: si la planilla no la
